@@ -106,9 +106,34 @@ JPA를 이용한 로직 수행과정
         JPA는 Member 엔티티의 매핑 정보를 분석하여 다음과 같은 SQL을 만들어, 데이터베이스에 전달한다.
         
         ```sql
-        INSERT INTO MEMBER(ID, NAME, AGE) VALUES (’id1’,’유미’,25) 
+        INSERT INTO MEMBER(ID, NAME, AGE) VALUES (’id1’,’유미’,25);
         ```
         
     - 수정
+        ```java
+        member.setAge(27);
+        ```
+        JPA는 엔티티의 변경사항을 추적할 수 있는 기능을 지니고 있다. 따라서 setAge 메서드를 통해 필드의 값이 바뀌면 다음과 같은 SQL 문을 만들어, 데이터베이스에 전달한다.
+        ```sql
+        UPDATE MEMBER
+            SET AGE=27
+        WHERE ID='id1';
+        ```
     - 조회
+        ```java
+        Member member = em.find(Member.class, 'id1');
+        ```
+        엔티티 매니저의 find 매서드는 엔티티의 Id로 설정된 컬럼 기반으로 조회하고 첫 번째 파라미터 타입으로 반환한다. JPA는 다음과 같은 SQL 문을 만들어, 데이터베이스에 전달한다.
+        ```sql
+        SELECT *
+        FROM MEMBER
+        WHERE ID = 'id1';
+        ```
     - 삭제
+        ```java
+        em.remove(member);
+        ```
+        엔티티 매니저의 remove가 실행되면 ID로 설정된 값 기반으로 JPA는 다음과 같은 SQL문을 만들어, 데이터베이스에 전달한다.
+        ```sql
+        DELETE FROM MEMBER WHERE ID='id1';
+        ```
