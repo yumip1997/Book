@@ -15,7 +15,7 @@
 ### 기본 키 매핑
 - 기본 키 직접 할당 전략
     - 기본 키에 해당하는 필드에 @Id를 명시
-    - 가능 타입 : 자바 기본형, 자바 래퍼평, String, java.util.Date, java.sql.Date, java.math.BigDecimal, java.math.BigInteger
+    - 가능 타입 : 자바 기본형, 자바 래퍼형, String, java.util.Date, java.sql.Date, java.math.BigDecimal, java.math.BigInteger
     ```java
     @Entity
     @Table(name="MEMBER")
@@ -28,7 +28,7 @@
     }
     ```
 - IDENTITY 전략
-    - 기본 키 생성을 데이터베이스에 위임
+    - 기본 키 생성을 데이터베이스에 위임 (EX. 데이터베이스의 AUTO_INCREMENT 속성)
     - 기본 키에 해당하는 필드에 @Id, @GeneratedValue(strategy = GenrationType.IDENTITY) 명시
     ```java
     @Entity
@@ -42,9 +42,44 @@
     private String userName;
     }
     ```
+    - 영속성 컨테이너 관리 하에 있기 위해서는 식별자가 반드시 필요하다. AUTO_INCREMENT와 같은 기본 키 생성 방식으로는 INSERT 후 기본 키 값을 알 수 있다. 따라서, persist 메서드 호출 직후 INSERT 쿼리가 수행되어야한다. (쓰기 지연 동작X)
+    - persist 메서드 호출 후 영속상태에 돌입하는 과정
+      - persist 메서드 호출 시, INSERT 쿼리가 즉시 데이터베이스에 전달    
+      - 기본 키 값이 식별자에 할당
+      - 영속상태
+    - 쓰기 지연 동작X
 - SEQUENCE 전략
     - 기본키 생성을 데이터베이스에 위임하는데, 데이터베이스는 시퀀스를 사용해 기본 키 생성
-    
+    ```java
+    @Entity
+    @Table(name="MEMBER")
+    @SequenceGenerator(
+        name = "BOARD_SEQ_GENERATOR",
+        sequenceName = "BOARD_SEQ", // 매핑할 데이터베이스의 시퀀스 이름
+        initialValue = 1, allocationSize = 1
+    )
+    public class Member {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+                    generator = "BOARD_SEQ_GENERATOR")
+    private Long id;
+
+    private String userName;
+    }
+    ```
+    - @SequenceGenerator
+      - 클래스 Level
+      - name 속성 : Generator의 이름
+      - sequenceName 속성 : 매핑할 데이터베이스의 시퀀스 이름
+    - 식별자에 해당하는 필드
+      - @Id
+      - @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "BOARD_SEQ_GENERATOR")
+    - persist 메서드 호출 후 영속상태에 돌입하는 과정
+      - DB의 시퀀스를 이용해 기본 키 값 조회
+      - 기본 키 값이 식별자에 할당
+      - 영속상태
+      - INSERT 쿼리는 쓰기 지연 SQL 저장소에 저장 -> 트랜잭션 커밋 후 DB에 전달
 ### 필드와 컬럼 매핑 : @Column
 
 ### 데이터베이스 스키마 자동 생성
