@@ -151,4 +151,98 @@ public class Team{
     ```
 
 ### 객체의 서로 다른 2개의 단방향 관계
-객체의 경우 양방향 관계는 없고, 단방향 관계를 각각 맺어주면 마치 양방향 관계처럼 보인다. 
+객체의 경우 양방향 관계는 없고, 단방향 관계를 각각 맺어주면 마치 양방향 관계처럼 보이게 할 수 있다. 
+- 객체
+    - 단방향 관계를 연관관계에 놓인 두 엔티티 모두에 설정
+    - 회원 <-> 팀
+        - 회원 - 팀 : N:1 관계
+        - 팀 - 회원 : 1:N 관계
+    - 1:N 관계에 있는 경우 컬렉션을 사용
+```java
+@Entity
+@SequenceGenerator(
+    name = "MEMBER_SEQ_GENERATOR",
+    sequenceName = "MEMBER_SEQ",
+    initialValue = 1, allocationSize = 1
+)
+public class Member{
+    
+    @Id
+    @Column(name ="MEMBER_ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+                    generator = "MEMBER_SEQ_GENERATOR")
+    private int id;
+    @Column(name ="NAME")
+    private String username;
+
+    public Member(String username){
+        this.username = username;
+    }
+
+    // 연관관계 맹핑
+    @ManyToOne
+    @JoinColumn(name = "TEAM_ID")
+    private Team team;
+
+    public void setTeam(Team team){
+        this.team = team;
+    }
+}
+
+@Entity
+@SequenceGenerator(
+    name = "TEAM_SEQ_GENERATOR",
+    sequenceName = "TEAM_SEQ",
+    initialValue = 1, allocationSize = 1
+)
+public class Team{
+    
+    @Id
+    @Column(name ="TEAM_ID")
+    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+                    generator = "TEAM_SEQ_GENERATOR")
+    private int id;
+    private String name;
+    
+    @OneToMany(mappedBy="team")
+    private List<Member> memberList;
+
+    public Team(String name){
+        this.name = name;
+    }
+}
+```  
+- 테이블
+    - 항상 양방향 관계
+- 조회
+```java
+Team team = em.find(Team.class, "team1");
+List<Member> memberList = team.getMemberList(); // 객체 그래프 탐색
+```
+
+### 연관관계의 주인
+서로 단방향 관계에 있는 두 엔티티에 대해 외래키를 관리하는 주인을 정해야한다. 주인 엔티티만이 외래키 값을 등록, 수정, 삭제할 수 있다. 주인은 외래키를 지닌 테이블과 매핑되는 엔티티로 정하면 되며, 다중성 어노테이션에 mappedBy 속성을 지정해주지 않으면 된다.
+
+### 두 개의 단방향 연관관계 설정 시 주의점
+다음과 같은 상황에서 외래키 값이 제대로 등록되지 않는다.
+- 주인 엔티티의 연관관계에 있는 참조변수 셋팅 x
+    ```java
+    public void notSettedRelEntityOfOwner(EntityManager em){
+        Member member1 = new Member("회원1");
+        em.persist(member1);
+
+        Member member2 = new Member("회원2");
+        em.persist(member2);
+
+        Team team = new Team("팀1");
+        team.getMemberList().add(member1);
+        team.getMemberList().add(member2);
+        em.persist(team);
+
+    }  
+    ```
+    => Member 테이블의 Insert 된 Row에 대해 TEAM_ID의 값이 모두 null  
+
+결론  
+1) 주인 엔티티의 연관관에 있는 참조변수는 반드시 셋팅
+2) 순수 자바 객체와 데이터베이스 데이터와의 정합성을 위해, 연관관계에 있는 참조는 주인이든 아니든 모두 셋팅 
