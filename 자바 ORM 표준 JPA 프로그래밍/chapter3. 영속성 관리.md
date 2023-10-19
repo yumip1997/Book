@@ -71,9 +71,18 @@ EntityManger가 엔티티의 생명주기를 관리할 수 있다. 영속 컨텍
     1) 변경감지 동작 -> 스냅샷과 엔티티 비교 후 변경된 엔티티가 있으면 수정쿼리가 쓰기 지연 SQL 저장소에 저장
     2) 쓰기 지연 SQL 저장소에 저장된 쿼리들을 데이터베이스에 전달한다.
 - 호출 방법
-    1) 엔티티 매니저의 flush 메서드 직접호출
+    1) 엔티티 매니저의 flush 메서드 직접호출 (테스트 코드 외에는 거의 사용x)
     2) 트랜잭션 커밋 전 자동 호출
     3) JPQL 쿼리 실행 시 호출  
+        - 이유
+          - JPQL 쿼리 실행 시 플러시가 호출 되지 않으면, 데이터의 정합성이 맞지 않은 경우 발생
+          - ```java
+            em.persist(memberA)
+            em.persist(memberB)
+
+            List<Member> memberList = em.createQuery("select m from Member m", Member.class).getResultList();
+            ````
+             만약 해당 JPQL 쿼리 실행 시, 플러시가 호출되지 않으면 memberA, memberB는 memberList에 포함되지 않는다.
     <aside>💡 엔티티 매니저의 find 호출 시에는 플러시가 자동 호출되지 않는다.</aside>
 - 플러시 모드 옵션
     - FlushModeType.AUTO : 트랜잭션 커밋 전이나 JPQL 쿼리 실행 시 자동 호출
@@ -89,6 +98,14 @@ EntityManger가 엔티티의 생명주기를 관리할 수 있다. 영속 컨텍
     ```java
     void detach(Object var1);
     ```
+    ```java
+        Member member = em.find(Member.class, "id1");
+
+        em.detach(member); // 영속성 컨텍스트에서 분리
+
+        Member member2 = em.find(Member.class, "id1");
+    ```
+    => select 쿼리가 두 번 실행된다. 만약 준영속 상태가 아니라면, 두 번째 find 실행 시 DB에 접근하지 않고 1차 캐시 저장소에 저장된 인스턴스가 반환된다. (member와 member2는 동일)
     2) clear : 모든 엔티티를 준영속 상태로 만듦 -> 1차 캐시 저장소, 쓰기 지연 SQL 저장소가 초기화 됨
     ```java
     void clear();
