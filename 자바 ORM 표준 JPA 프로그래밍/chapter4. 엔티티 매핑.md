@@ -21,10 +21,10 @@
     @Table(name="MEMBER")
     public class Member {
 
-    @Id
-    private Long id;
+      @Id
+      private Long id;
 
-    private String userName;
+      private String userName;
     }
     ```
 - IDENTITY 전략
@@ -35,11 +35,11 @@
     @Table(name="MEMBER")
     public class Member {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+      @Id
+      @GeneratedValue(strategy = GenerationType.IDENTITY)
+      private Long id;
 
-    private String userName;
+      private String userName;
     }
     ```
     - 영속성 컨테이너 관리 하에 있기 위해서는 식별자가 반드시 필요하다. AUTO_INCREMENT와 같은 기본 키 생성 방식으로는 INSERT 후 기본 키 값을 알 수 있다. 따라서, persist 메서드 호출 직후 INSERT 쿼리가 수행되어야한다. (쓰기 지연 동작X)
@@ -60,12 +60,11 @@
     )
     public class Member {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE,
+      @Id
+      @GeneratedValue(strategy = GenerationType.SEQUENCE,
                     generator = "BOARD_SEQ_GENERATOR")
-    private Long id;
-
-    private String userName;
+      private Long id;
+      private String userName;
     }
     ```
     - @SequenceGenerator
@@ -80,6 +79,34 @@
       - 기본 키 값이 식별자에 할당
       - 영속상태
       - INSERT 쿼리는 쓰기 지연 SQL 저장소에 저장 -> 트랜잭션 커밋 후 DB에 전달
+    -
+- Table 전략
+  - 키 생성 전용 테이블을 만들어서 데이터베이스의 시퀀스를 흉내내는 기본키 생성 전략
+  - 데이터베이스 방언에 상관없이 적용이 가능하나 성능 상의 문제가 발생할 수 있음
+  ```java
+  @Entity
+  @TableGenerator(
+      name ="MEMBER_SEQ_GENERATOR"
+      , table = "MY_SEQENCES"
+      , pkColumnValue = "MEMBER_SEQ", allocationSize = 1
+  )
+  public class Member {
+    @Id
+    @GeneratedValue(strategy = GenerationType.TABLE, generator = "MEMBER_SEQ_GENERATOR")
+    private Long id;
+    private String userName;
+  }
+  ```
+   => MY_SEQENCES 라는 테이블의 seqence_name이 MEMBER_SEQ인 row의 next_val 값이 기본키가 된다.
+  ```sql
+  create table MY_SEQENCES (
+    next_val bigint,
+    sequence_name varchar(255) not null,
+    primary key (sequence_name)
+  )
+
+  insert into MY_SEQENCES(sequence_name, next_val) values ('MEMBER_SEQ',0)
+  ```
 ### 필드와 컬럼 매핑 : @Column
 
 ### 데이터베이스 스키마 자동 생성
